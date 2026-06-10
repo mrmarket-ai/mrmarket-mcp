@@ -59,6 +59,7 @@ Add it as a remote MCP extension when prompted by Gemini's MCP onboarding, using
 | Tool | Cost | Purpose |
 |------|------|---------|
 | `query_data` | metered | The workhorse. A natural-language financial question in; structured rows and columns out. Screens, rankings, comparisons, time-series, cohort studies, and event studies are all single calls. |
+| `fetch_page` | free | The continuation. When a `query_data` result is too large for one response, page 1 comes back with a `pagination.next_cursor`; pass that cursor to `fetch_page` to retrieve the rest. It runs no new query, so it never costs credits — the original `query_data` is charged once. |
 | `describe_data` | free | The data catalog. Browse categories and fields, or search for a specific metric, before composing a question. |
 | `get_symbols` | free | Fast ticker, sector, and industry resolution. Name to ticker, sector membership, or the full universe in under 50ms. |
 | `getting_started` | free | A structured orientation tour with verified example prompts, grouped by use case. |
@@ -66,7 +67,7 @@ Add it as a remote MCP extension when prompted by Gemini's MCP onboarding, using
 | `get_account_status` | free | Connected account, plan tier, credit balance, and rate limits. A useful first call in any new session. |
 | `report_issue` | free | Flag a result that looks wrong or a feature that is missing. Pass the `query_id` from the response so the trace can be investigated. |
 
-Five of the seven tools cost zero credits. Only `query_data` consumes credits, priced by query complexity. Start with `getting_started` or `describe_data`, then move to `query_data`.
+Seven of the eight tools cost zero credits. Only `query_data` consumes credits, priced by query complexity. Start with `getting_started` or `describe_data`, then move to `query_data`.
 
 ---
 
@@ -172,6 +173,7 @@ Every `query_data` response carries a stable `error_code`, plus `warnings` and `
 | `RATE_LIMITED` | You hit your tier's per-minute or per-day cap. | Wait briefly, or check `get_account_status` for your exact limits. |
 | `INSUFFICIENT_CREDITS` | Your credit balance is exhausted. | Top up or upgrade at [mrmarket.ai](https://mrmarket.ai). Not a fault, no retry needed. |
 | `SCHEMA_DRIFT` | A data field is temporarily unavailable (mid-update). | Rephrase without the affected scope and try again. |
+| `INVALID_CURSOR` / `SNAPSHOT_EXPIRED` | A `fetch_page` cursor was malformed or its result snapshot aged out (snapshots live ~15 minutes). | Re-run the original `query_data` question to get a fresh result and cursor. |
 | `BILLING_UNAVAILABLE` / `SERVICE_ERROR` | A transient server-side issue. | Retry once; the `retryable` flag will be set. |
 | Empty result on a screen | Filters were too tight. | Loosen one threshold (e.g. ROIC > 15% instead of 25%) or widen the time range. |
 | A result looks wrong | An assumption or default may not match your intent. | Read the `assumptions` array. If it still looks wrong, file it with `report_issue` (include the `query_id`). |
